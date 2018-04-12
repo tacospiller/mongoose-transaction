@@ -265,8 +265,11 @@ TransactionSchema.methods._moveState = async function _moveState(prev, delta) {
     const state1 = delta.state || ((delta.$set || {}).state);
     const state2 = updatedDoc && updatedDoc.state;
     if (state1 !== state2) {
-        throw new TransactionError(ERROR_TYPE.SOMETHING_WRONG,
-                                   {transaction: this, query: query});
+        throw new TransactionError(ERROR_TYPE.SOMETHING_WRONG, {
+            transaction: this,
+            query: query,
+            updated: updatedDoc,
+        });
     }
     return (updatedDoc && updatedDoc.history) || [];
 };
@@ -718,12 +721,14 @@ TransactionSchema.methods.find = async function find(model, ...args) {
     let stillRemain = true;
     const promise = (async() => {
         const pseudoModel = ModelMap.getPseudoModel(model);
+        const fields = {_id: 1};
+        utils.addShardKeyFields(pseudoModel, fields);
         let RETRY_LIMIT = 5;
         const locked = [];
         while (RETRY_LIMIT--) {
             // TODO: sort
             const cursor = await model.collection.promise.find(conditions,
-                                                               {_id: 1});
+                                                               fields);
             const docs = await cursor.promise.toArray();
             if (!docs || !docs.length) {
                 stillRemain = false;
