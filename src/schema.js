@@ -346,6 +346,7 @@ TransactionSchema.methods.commit = async function commit(callback) {
                     // TODO: how can we give users their errors?
                 }
             });
+            this.afterCommitHooks = [];
             return Promise.all(promises);
         });
     }
@@ -660,7 +661,7 @@ TransactionSchema.methods.convertQueryForAvoidConflict = (conditions) => {
 };
 
 TransactionSchema.methods._acquireLock = async function _acquireLock(model, fields,
-                                                             query1, query2) {
+                                                                     query1, query2) {
     let doc;
     const updateQuery = {$set: {t: this._id}};
     const opt = {new: true, fields: fields};
